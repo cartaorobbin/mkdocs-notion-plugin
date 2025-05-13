@@ -23,7 +23,7 @@ def test_plugin_config():
         "cache_dir": "custom-cache",
     }
     plugin.load_config(config)
-    
+
     assert plugin.config["notion_token"] == "test-token"
     assert plugin.config["database_id"] == "test-db-id"
     assert plugin.config["cache_dir"] == "custom-cache"
@@ -33,7 +33,7 @@ def test_plugin_required_config():
     """Test that the plugin requires notion_token and database_id."""
     plugin = NotionPlugin()
     config = {}
-    
+
     with pytest.raises(Exception):
         plugin.load_config(config)
 
@@ -48,9 +48,9 @@ def test_on_config():
         "cache_dir": "custom-cache",
     }
     plugin.load_config(config_dict)
-    
+
     result = plugin.on_config(config)
-    
+
     assert isinstance(result, Config)
     assert plugin.notion_token == "test-token"
     assert plugin.database_id == "test-db-id"
@@ -62,9 +62,9 @@ def test_on_files():
     plugin = NotionPlugin()
     config = Config(schema=[])
     files = Files([])
-    
+
     result = plugin.on_files(files, config)
-    
+
     assert isinstance(result, Files)
 
 
@@ -74,8 +74,8 @@ def test_on_page_markdown():
     markdown = "# Test"
     config = Config(schema=[])
     files = Files([])
-    
+
     result = plugin.on_page_markdown(markdown, None, config, files)
-    
+
     assert isinstance(result, str)
     assert result == markdown  # For now, no modifications are made
