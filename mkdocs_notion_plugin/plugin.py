@@ -315,22 +315,6 @@ class NotionPlugin(BasePlugin):
         # Convert HTML elements to Notion blocks
         blocks = self._convert_html_to_blocks(str(main_content))
 
-        # Create the index page under the parent page
-        index_page = self.notion.pages.create(
-            parent={"page_id": self.parent_page_id},
-            properties={
-                "title": [{"text": {"content": project_name}}]
-            },
-            children=blocks
-        )
-        logger.info(f"Created index page with ID: {index_page['id']}")
-        
-        # Store for navigation
-        self.pages.append({
-            "title": project_name,
-            "notion_id": index_page["id"]
-        })
-
         # Search for existing project
         results = self.notion.databases.query(
             database_id=self.database_id,
@@ -342,15 +326,12 @@ class NotionPlugin(BasePlugin):
             }
         ).get("results", [])
 
-        # Create or update the project page with link to index
+        # Create or update the project in the table
         properties = {
             "Name": {
                 "title": [{
                     "text": {
-                        "content": project_name,
-                        "link": {
-                            "url": f"https://www.notion.so/{index_page['id'].replace('-', '')}"
-                        }
+                        "content": project_name
                     }
                 }]
             },
@@ -362,17 +343,33 @@ class NotionPlugin(BasePlugin):
         }
 
         if results:
-            # Update existing project
+            # Delete existing project (this will delete all children too)
             project_page = results[0]
-            self.notion.pages.update(project_page["id"], properties=properties)
-            logger.info(f"Updated project: {project_name}")
-        else:
-            # Create new project
-            self.notion.pages.create(
-                parent={"database_id": self.database_id},
-                properties=properties
-            )
-            logger.info(f"Created new project: {project_name}")
+            self.notion.pages.update(project_page["id"], archived=True)
+            logger.info(f"Deleted existing project: {project_name}")
+
+        # Create new project
+        project_page = self.notion.pages.create(
+            parent={"database_id": self.database_id},
+            properties=properties
+        )
+        logger.info(f"Created new project: {project_name}")
+
+        # Create index page under the project
+        index_page = self.notion.pages.create(
+            parent={"page_id": project_page["id"]},
+            properties={
+                "title": [{"text": {"content": project_name}}]
+            },
+            children=blocks
+        )
+        logger.info(f"Created index page: {project_name}")
+
+        # Store for navigation
+        self.pages.append({
+            "title": project_name,
+            "notion_id": index_page["id"]
+        })
 
         # Now create the documentation pages under the parent page
         site_dir = Path(config.site_dir)
@@ -406,14 +403,15 @@ class NotionPlugin(BasePlugin):
             title = self._get_page_title(soup, relative_path)
             logger.info(f"Creating Notion page: {title}")
 
-            # Create the documentation page under the index page
+            # Create the child page under the index page
             child_page = self.notion.pages.create(
-                parent={"page_id": index_page['id']},  # Use the index page as parent
+                parent={"page_id": index_page['id']},
                 properties={
                     "title": [{"text": {"content": title}}]
                 },
                 children=blocks
             )
+            logger.info(f"Created page: {title}")
 
             # Store page info for navigation
             self.pages.append({
