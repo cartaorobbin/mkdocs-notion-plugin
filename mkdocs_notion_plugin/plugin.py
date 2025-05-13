@@ -33,10 +33,8 @@ class NotionPlugin(BasePlugin):
         self.notion: Optional[Client] = None
         self.pages: List[Dict[str, Any]] = []  # Store page info for navigation
 
-    def _create_docs_table(self, force: bool = True) -> str:
+    def _create_docs_table(self) -> str:
         """Create a table for documentation in the parent page if it doesn't exist.
-        Args:
-            force: If True, delete existing table and create a new one.
         Returns:
             The database ID of the table.
         """
@@ -52,12 +50,8 @@ class NotionPlugin(BasePlugin):
         # Check if any of the found databases are in our parent page
         for db in results:
             if db.get("parent", {}).get("page_id") == self.parent_page_id:
-                if force:
-                    logger.info(f"Deleting existing projects table with ID: {db['id']}")
-                    self.notion.blocks.delete(db['id'])
-                else:
-                    logger.info(f"Found existing projects table with ID: {db['id']}")
-                    return db['id']
+                logger.info(f"Found existing projects table with ID: {db['id']}")
+                return db['id']
         
         # If no table exists, create one
         logger.info("Creating new projects table...")
@@ -67,7 +61,6 @@ class NotionPlugin(BasePlugin):
             properties={
                 "Name": {"title": {}},
                 "Last Updated": {"date": {}},
-                "Documentation URL": {"url": {}},
                 "Status": {"status": {}}  # Status options are configured in the UI
             }
         )
@@ -304,7 +297,7 @@ class NotionPlugin(BasePlugin):
         project_name = config["site_name"]
         logger.info(f"Creating/updating project: {project_name}")
 
-        # First create the index page with content from index.html
+        # Process the index page first
         site_dir = Path(config.site_dir)
         index_file = site_dir / "index.html"
         
@@ -322,7 +315,7 @@ class NotionPlugin(BasePlugin):
         # Convert HTML elements to Notion blocks
         blocks = self._convert_html_to_blocks(str(main_content))
 
-        # Create the index page
+        # Create the index page under the parent page
         index_page = self.notion.pages.create(
             parent={"page_id": self.parent_page_id},
             properties={
@@ -349,18 +342,22 @@ class NotionPlugin(BasePlugin):
             }
         ).get("results", [])
 
-        # Create or update the project page
+        # Create or update the project page with link to index
         properties = {
             "Name": {
-                "title": [{"text": {"content": project_name}}]
+                "title": [{
+                    "text": {
+                        "content": project_name,
+                        "link": {
+                            "url": f"https://www.notion.so/{index_page['id'].replace('-', '')}"
+                        }
+                    }
+                }]
             },
             "Last Updated": {
                 "date": {
                     "start": datetime.now().isoformat()
                 }
-            },
-            "Documentation URL": {
-                "url": f"https://www.notion.so/{index_page['id'].replace('-', '')}"
             }
         }
 
@@ -409,9 +406,9 @@ class NotionPlugin(BasePlugin):
             title = self._get_page_title(soup, relative_path)
             logger.info(f"Creating Notion page: {title}")
 
-            # Create the documentation page under the parent page
-            notion_page = self.notion.pages.create(
-                parent={"page_id": self.parent_page_id},
+            # Create the documentation page under the index page
+            child_page = self.notion.pages.create(
+                parent={"page_id": index_page['id']},  # Use the index page as parent
                 properties={
                     "title": [{"text": {"content": title}}]
                 },
@@ -421,7 +418,7 @@ class NotionPlugin(BasePlugin):
             # Store page info for navigation
             self.pages.append({
                 "title": title,
-                "notion_id": notion_page["id"]
+                "notion_id": child_page["id"]
             })
 
         # Second pass: update pages with navigation
