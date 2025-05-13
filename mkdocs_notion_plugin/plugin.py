@@ -1,5 +1,6 @@
 """MkDocs plugin for Notion integration."""
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 from mkdocs.config import Config
 from mkdocs.config.config_options import Type
@@ -32,6 +33,47 @@ class NotionPlugin(BasePlugin):
         self.notion: Optional[Client] = None
         self.pages: List[Dict[str, Any]] = []  # Store page info for navigation
 
+    def _create_docs_table(self, force: bool = True) -> str:
+        """Create a table for documentation in the parent page if it doesn't exist.
+        Args:
+            force: If True, delete existing table and create a new one.
+        Returns:
+            The database ID of the table.
+        """
+        # First check if we already have a table in the parent page
+        results = self.notion.search(
+            query="Projects",
+            filter={
+                "property": "object",
+                "value": "database"
+            }
+        ).get("results", [])
+        
+        # Check if any of the found databases are in our parent page
+        for db in results:
+            if db.get("parent", {}).get("page_id") == self.parent_page_id:
+                if force:
+                    logger.info(f"Deleting existing projects table with ID: {db['id']}")
+                    self.notion.blocks.delete(db['id'])
+                else:
+                    logger.info(f"Found existing projects table with ID: {db['id']}")
+                    return db['id']
+        
+        # If no table exists, create one
+        logger.info("Creating new projects table...")
+        new_db = self.notion.databases.create(
+            parent={"type": "page_id", "page_id": self.parent_page_id},
+            title=[{"type": "text", "text": {"content": "Projects"}}],
+            properties={
+                "Name": {"title": {}},
+                "Last Updated": {"date": {}},
+                "Documentation URL": {"url": {}},
+                "Status": {"status": {}}  # Status options are configured in the UI
+            }
+        )
+        logger.info(f"Created new documentation table with ID: {new_db['id']}")
+        return new_db['id']
+
     def on_config(self, config: Config) -> Config:
         """Process the configuration and initialize Notion client."""
         self.notion_token = self.config["notion_token"]
@@ -40,6 +82,9 @@ class NotionPlugin(BasePlugin):
         
         # Initialize Notion client
         self.notion = Client(auth=self.notion_token)
+        
+        # Create or get the documentation table
+        self.database_id = self._create_docs_table()
 
         return config
 
@@ -255,50 +300,130 @@ class NotionPlugin(BasePlugin):
 
     def on_post_build(self, config: Config) -> None:
         """Publish the generated documentation to Notion after build."""
-        site_dir = Path(config["site_dir"])
-        self.pages = []  # Reset pages list
+        # Create or update the project in the Projects table
+        project_name = config["site_name"]
+        logger.info(f"Creating/updating project: {project_name}")
+
+        # First create the index page with content from index.html
+        site_dir = Path(config.site_dir)
+        index_file = site_dir / "index.html"
         
-        # Create a new page in Notion for the documentation
-        root_page = self.notion.pages.create(
+        # Read and parse index.html content
+        with open(index_file, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        soup = BeautifulSoup(html_content, "html.parser")
+        main_content = soup.find("div", {"role": "main"})
+
+        if not main_content:
+            logger.warning("No main content found in index.html")
+            return
+
+        # Convert HTML elements to Notion blocks
+        blocks = self._convert_html_to_blocks(str(main_content))
+
+        # Create the index page
+        index_page = self.notion.pages.create(
             parent={"page_id": self.parent_page_id},
             properties={
-                "title": [{"text": {"content": config["site_name"]}}]
-            }
+                "title": [{"text": {"content": project_name}}]
+            },
+            children=blocks
         )
+        logger.info(f"Created index page with ID: {index_page['id']}")
         
-        # First pass: collect all pages and create them in Notion
-        html_files = [f for f in site_dir.rglob("*.html") 
-                     if f.name not in ["404.html", "search.html"]]
-        html_files.sort()  # Ensure consistent ordering
-        
-        for html_file in html_files:
+        # Store for navigation
+        self.pages.append({
+            "title": project_name,
+            "notion_id": index_page["id"]
+        })
+
+        # Search for existing project
+        results = self.notion.databases.query(
+            database_id=self.database_id,
+            filter={
+                "property": "Name",
+                "title": {
+                    "equals": project_name
+                }
+            }
+        ).get("results", [])
+
+        # Create or update the project page
+        properties = {
+            "Name": {
+                "title": [{"text": {"content": project_name}}]
+            },
+            "Last Updated": {
+                "date": {
+                    "start": datetime.now().isoformat()
+                }
+            },
+            "Documentation URL": {
+                "url": f"https://www.notion.so/{index_page['id'].replace('-', '')}"
+            }
+        }
+
+        if results:
+            # Update existing project
+            project_page = results[0]
+            self.notion.pages.update(project_page["id"], properties=properties)
+            logger.info(f"Updated project: {project_name}")
+        else:
+            # Create new project
+            self.notion.pages.create(
+                parent={"database_id": self.database_id},
+                properties=properties
+            )
+            logger.info(f"Created new project: {project_name}")
+
+        # Now create the documentation pages under the parent page
+        site_dir = Path(config.site_dir)
+        for html_file in site_dir.rglob("*.html"):
+            # Skip utility pages
+            if html_file.stem in ["404", "search"]:
+                continue
+
             relative_path = html_file.relative_to(site_dir)
+            logger.info(f"Processing {relative_path}")
+
+            # Read and parse HTML content
             with open(html_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            
-            soup = BeautifulSoup(content, 'html.parser')
-            page_title = self._get_page_title(soup, relative_path)
-            blocks = self._convert_html_to_blocks(content)
-            
-            # Create the page first without navigation
+                html_content = f.read()
+
+            soup = BeautifulSoup(html_content, "html.parser")
+            main_content = soup.find("div", {"role": "main"})
+
+            if not main_content:
+                logger.warning(f"No main content found in {relative_path}")
+                continue
+
+            # Count child elements for logging
+            child_elements = main_content.find_all(recursive=False)
+            logger.info(f"Found {len(child_elements)} child elements in main content")
+
+            # Convert HTML elements to Notion blocks
+            blocks = self._convert_html_to_blocks(str(main_content))
+
+            # Get the page title
+            title = self._get_page_title(soup, relative_path)
+            logger.info(f"Creating Notion page: {title}")
+
+            # Create the documentation page under the parent page
             notion_page = self.notion.pages.create(
-                parent={"page_id": root_page["id"]},
+                parent={"page_id": self.parent_page_id},
                 properties={
-                    "title": [{"text": {"content": page_title}}]
+                    "title": [{"text": {"content": title}}]
                 },
                 children=blocks
             )
-            
+
+            # Store page info for navigation
             self.pages.append({
-                'path': relative_path,
-                'title': page_title,
-                'content': content,
-                'notion_id': notion_page['id'],
-                'blocks': blocks
+                "title": title,
+                "notion_id": notion_page["id"]
             })
-            
-            logger.info(f"Created Notion page: {page_title}")
-        
+
         # Second pass: update pages with navigation
         for i, page_info in enumerate(self.pages):
             try:
