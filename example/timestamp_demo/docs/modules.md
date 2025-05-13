@@ -28,37 +28,41 @@ The plugin supports converting Markdown/HTML content to the following Notion blo
    - Numbered List (`numbered_list_item`)
 
 3. **Code Blocks**
-   ```python
-   {
-       "object": "block",
-       "type": "code",
-       "code": {
-           "language": "python",
-           "rich_text": [{"text": {"content": "..."}}]
-       }
-   }
-   ```
 
 4. **Table Blocks**
-   ```json
-   {
-       "object": "block",
-       "type": "table",
-       "table": {
-           "table_width": 3,
-           "has_column_header": true,
-           "has_row_header": false,
-           "children": [
-               {
-                   "type": "table_row",
-                   "table_row": {
-                       "cells": [["Header 1"], ["Header 2"], ["Header 3"]]
-                   }
-               }
-           ]
-       }
-   }
-   ```
+
+Example of a code block:
+```python
+{
+    "object": "block",
+    "type": "code",
+    "code": {
+        "language": "python",
+        "rich_text": [{"text": {"content": "..."}}]
+    }
+}
+```
+
+Example of a table block:
+```json
+{
+    "object": "block",
+    "type": "table",
+    "table": {
+        "table_width": 3,
+        "has_column_header": true,
+        "has_row_header": false,
+        "children": [
+            {
+                "type": "table_row",
+                "table_row": {
+                    "cells": [["Header 1"], ["Header 2"], ["Header 3"]]
+                }
+            }
+        ]
+    }
+}
+```
 
 ## Configuration
 
@@ -88,29 +92,35 @@ plugins:
 
 Here's how data flows through the plugin:
 
+The data flow consists of three main stages:
+
 1. **Input Processing**
-   ```mermaid
-   graph LR
-       A[Markdown Files] --> B[MkDocs Build]
-       B --> C[HTML Output]
-       C --> D[Plugin Processing]
-   ```
-
 2. **Content Conversion**
-   ```mermaid
-   graph LR
-       A[HTML Content] --> B[BeautifulSoup Parse]
-       B --> C[Extract Elements]
-       C --> D[Convert to Notion Blocks]
-   ```
-
 3. **Notion Integration**
-   ```mermaid
-   graph LR
-       A[Notion Blocks] --> B[API Client]
-       B --> C[Create Pages]
-       C --> D[Add Content]
-   ```
+
+Input Processing Flow:
+```mermaid
+graph LR
+    A[Markdown Files] --> B[MkDocs Build]
+    B --> C[HTML Output]
+    C --> D[Plugin Processing]
+```
+
+Content Conversion Flow:
+```mermaid
+graph LR
+    A[HTML Content] --> B[BeautifulSoup Parse]
+    B --> C[Extract Elements]
+    C --> D[Convert to Notion Blocks]
+```
+
+Notion Integration Flow:
+```mermaid
+graph LR
+    A[Notion Blocks] --> B[API Client]
+    B --> C[Create Pages]
+    C --> D[Add Content]
+```
 
 ## Error Handling
 

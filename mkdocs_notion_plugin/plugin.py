@@ -102,15 +102,32 @@ class NotionPlugin(BasePlugin):
                     "paragraph": {"rich_text": [{"text": {"content": element.get_text()}}]}
                 }
             elif element.name == 'pre':
-                code = element.find('code')
-                language = code.get('class', [''])[0].replace('language-', '') if code else 'plain text'
-                block = {
-                    "object": "block",
-                    "type": "code",
-                    "code": {
-                        "language": language,
-                        "rich_text": [{"text": {"content": element.get_text()}}]}
-                }
+                code_element = element.find('code')
+                if code_element:
+                    # Get language from class (e.g., 'language-mermaid' -> 'mermaid')
+                    classes = code_element.get('class', [])
+                    language = ''
+                    for cls in classes:
+                        if cls.startswith('language-'):
+                            language = cls.replace('language-', '')
+                            break
+                    
+                    # Get raw content, preserving newlines and whitespace
+                    content = code_element.string if code_element.string else code_element.get_text()
+                    content = content.strip()
+                    
+                    # Get the language, defaulting to plain text
+                    language = language.lower() if language else "plain text"
+                    
+                    # Create the code block
+                    block = {
+                        "object": "block",
+                        "type": "code",
+                        "code": {
+                            "rich_text": [{"type": "text", "text": {"content": content}}],
+                            "language": language,
+                        }
+                    }
             elif element.name in ['ul', 'ol']:
                 for li in element.find_all('li', recursive=False):
                     list_block = {
