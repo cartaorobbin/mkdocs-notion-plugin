@@ -30,6 +30,7 @@ class NotionPlugin(BasePlugin):
         self.database_id: Optional[str] = None
         self.parent_page_id: Optional[str] = None
         self.notion: Optional[Client] = None
+        self.pages: List[Dict[str, Any]] = []  # Store page info for navigation
 
     def on_config(self, config: Config) -> Config:
         """Process the configuration and initialize Notion client."""
@@ -165,9 +166,80 @@ class NotionPlugin(BasePlugin):
         logger.info(f"Created {len(blocks)} blocks total")
         return blocks
 
+    def _add_navigation_block(self, current_index: int) -> List[Dict[str, Any]]:
+        """Create navigation blocks for the current page."""
+        nav_blocks = []
+        
+        # Add a divider before navigation
+        nav_blocks.append({
+            "object": "block",
+            "type": "divider",
+            "divider": {}
+        })
+        
+        # Add navigation heading
+        nav_blocks.append({
+            "object": "block",
+            "type": "heading_3",
+            "heading_3": {
+                "rich_text": [{
+                    "type": "text",
+                    "text": {"content": "Navigation"},
+                    "annotations": {"bold": True}
+                }]
+            }
+        })
+        
+        # Create navigation links
+        if current_index > 0:
+            prev_page = self.pages[current_index - 1]
+            nav_blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": "← Previous: "},
+                        "annotations": {"italic": True, "color": "gray"}
+                    }, {
+                        "type": "text",
+                        "text": {"content": prev_page['title'], "link": {"url": f"https://notion.so/{prev_page['notion_id'].replace('-', '')}"}},
+                        "annotations": {"bold": True, "color": "blue"}
+                    }]
+                }
+            })
+        
+        if current_index < len(self.pages) - 1:
+            next_page = self.pages[current_index + 1]
+            nav_blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{
+                        "type": "text",
+                        "text": {"content": "Next: "},
+                        "annotations": {"italic": True, "color": "gray"}
+                    }, {
+                        "type": "text",
+                        "text": {"content": next_page['title'] + " →", "link": {"url": f"https://notion.so/{next_page['notion_id'].replace('-', '')}"}},
+                        "annotations": {"bold": True, "color": "blue"}
+                    }]
+                }
+            })
+        
+        # Add a final divider
+        nav_blocks.append({
+            "object": "block",
+            "type": "divider",
+            "divider": {}
+        })
+        
+        return nav_blocks
+
     def on_post_build(self, config: Config) -> None:
         """Publish the generated documentation to Notion after build."""
         site_dir = Path(config["site_dir"])
+        self.pages = []  # Reset pages list
         
         # Create a new page in Notion for the documentation
         root_page = self.notion.pages.create(
@@ -177,33 +249,51 @@ class NotionPlugin(BasePlugin):
             }
         )
         
-        # Process each HTML file in the build directory
-        for html_file in site_dir.rglob("*.html"):
+        # First pass: collect all pages and create them in Notion
+        html_files = [f for f in site_dir.rglob("*.html") 
+                     if f.name not in ["404.html", "search.html"]]
+        html_files.sort()  # Ensure consistent ordering
+        
+        for html_file in html_files:
             relative_path = html_file.relative_to(site_dir)
-            # Skip 404 and search pages
-            if relative_path.name in ["404.html", "search.html"]:
-                logger.info(f"Skipping {relative_path}")
-                continue
-            
-            logger.info(f"Processing {relative_path}")
-            
             with open(html_file, "r", encoding="utf-8") as f:
                 content = f.read()
             
+            soup = BeautifulSoup(content, 'html.parser')
+            page_title = self._get_page_title(soup, relative_path)
+            blocks = self._convert_html_to_blocks(content)
+            
+            # Create the page first without navigation
+            notion_page = self.notion.pages.create(
+                parent={"page_id": root_page["id"]},
+                properties={
+                    "title": [{"text": {"content": page_title}}]
+                },
+                children=blocks
+            )
+            
+            self.pages.append({
+                'path': relative_path,
+                'title': page_title,
+                'content': content,
+                'notion_id': notion_page['id'],
+                'blocks': blocks
+            })
+            
+            logger.info(f"Created Notion page: {page_title}")
+        
+        # Second pass: update pages with navigation
+        for i, page_info in enumerate(self.pages):
             try:
-                soup = BeautifulSoup(content, 'html.parser')
-                page_title = self._get_page_title(soup, relative_path)
-                blocks = self._convert_html_to_blocks(content)
-                
-                # Create a subpage in Notion
-                self.notion.pages.create(
-                    parent={"page_id": root_page["id"]},
-                    properties={
-                        "title": [{"text": {"content": page_title}}]
-                    },
-                    children=blocks
-                )
-                logger.info(f"Created Notion page: {page_title}")
-                logger.info(f"Created Notion page for {relative_path}")
+                # Add navigation blocks
+                nav_blocks = self._add_navigation_block(i)
+                if nav_blocks:  # Only update if there are navigation links
+                    # Append navigation blocks to the page
+                    for block in nav_blocks:
+                        self.notion.blocks.children.append(
+                            block_id=page_info['notion_id'],
+                            children=[block]
+                        )
+                    logger.info(f"Added navigation to: {page_info['title']}")
             except Exception as e:
-                logger.error(f"Failed to process {relative_path}: {str(e)}")
+                logger.error(f"Failed to add navigation to {page_info['path']}: {str(e)}")
