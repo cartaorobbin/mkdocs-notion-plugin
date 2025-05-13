@@ -25,7 +25,7 @@ jobs:
         id: vars
         run: echo tag=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
 
-    - name: Build
+      - name: Build
         run: |
           source .venv/bin/activate
           poetry version $RELEASE_VERSION
@@ -38,7 +38,7 @@ jobs:
           CODEARTIFACT_REPOSITORY_NAME: ${{ vars.CODEARTIFACT_REPOSITORY_NAME }}
         run: |
           source .venv/bin/activate
-          poetry publish -r $CODEARTIFACT_REPOSITORY_NAME
+          make publish
 
 
 
