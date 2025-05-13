@@ -11,12 +11,12 @@ packages = [
 ]
 
 [tool.poetry.plugins."mkdocs.plugins"]
-notion = "mkdocs_notion_plugin:get_plugin"
+notion = "mkdocs_notion_plugin:NotionPlugin"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 mkdocs = "^1.5.0"
-notion-client = "^2.0.0"
+notion-client = "^2.3.0"
 beautifulsoup4 = "^4.12.0"
 
 [tool.poetry.group.dev.dependencies]

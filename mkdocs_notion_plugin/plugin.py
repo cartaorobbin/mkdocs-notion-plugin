@@ -2,6 +2,7 @@
 from typing import Any, Dict, List, Optional
 
 from mkdocs.config import Config
+from mkdocs.config.config_options import Type
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.files import Files
 from mkdocs.structure.pages import Page
@@ -18,9 +19,9 @@ class NotionPlugin(BasePlugin):
     """Plugin for publishing MkDocs content to Notion."""
 
     config_scheme = (
-        ("notion_token", Config.config_options.Type(str, required=True)),
-        ("database_id", Config.config_options.Type(str, required=True)),
-        ("parent_page_id", Config.config_options.Type(str, required=True)),
+        ("notion_token", Type(str, required=True)),
+        ("database_id", Type(str, required=True)),
+        ("parent_page_id", Type(str, required=True)),
     )
 
     def __init__(self):
@@ -38,6 +39,7 @@ class NotionPlugin(BasePlugin):
         
         # Initialize Notion client
         self.notion = Client(auth=self.notion_token)
+
         return config
 
     def _convert_html_to_blocks(self, html_content: str) -> List[Dict[str, Any]]:
@@ -111,6 +113,11 @@ class NotionPlugin(BasePlugin):
         # Process each HTML file in the build directory
         for html_file in site_dir.rglob("*.html"):
             relative_path = html_file.relative_to(site_dir)
+            # Skip 404 and search pages
+            if relative_path.name in ["404.html", "search.html"]:
+                logger.info(f"Skipping {relative_path}")
+                continue
+            
             logger.info(f"Processing {relative_path}")
             
             with open(html_file, "r", encoding="utf-8") as f:
