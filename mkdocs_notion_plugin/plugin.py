@@ -23,6 +23,7 @@ class NotionPlugin(BasePlugin):
         ("notion_token", Type(str, required=True)),
         ("database_id", Type(str, required=True)),
         ("parent_page_id", Type(str, required=True)),
+        ("version", Type(str, required=True)),
     )
 
     def __init__(self):
@@ -30,6 +31,7 @@ class NotionPlugin(BasePlugin):
         self.notion_token: Optional[str] = None
         self.database_id: Optional[str] = None
         self.parent_page_id: Optional[str] = None
+        self.version: Optional[str] = None
         self.notion: Optional[Client] = None
         self.pages: List[Dict[str, Any]] = []  # Store page info for navigation
 
@@ -50,8 +52,19 @@ class NotionPlugin(BasePlugin):
         # Check if any of the found databases are in our parent page
         for db in results:
             if db.get("parent", {}).get("page_id") == self.parent_page_id:
-                logger.info(f"Found existing projects table with ID: {db['id']}")
-                return db['id']
+                # Check if database has all required properties
+                properties = db.get("properties", {})
+                required_props = {"Name", "Version", "Last Updated"}
+                if all(prop in properties for prop in required_props):
+                    logger.info(f"Found existing projects table with ID: {db['id']}")
+                    return db['id']
+                else:
+                    # Archive the database if schema doesn't match
+                    logger.info("Existing table has incorrect schema, recreating...")
+                    self.notion.databases.update(
+                        database_id=db["id"],
+                        archived=True
+                    )
         
         # If no table exists, create one
         logger.info("Creating new projects table...")
@@ -60,10 +73,11 @@ class NotionPlugin(BasePlugin):
             title=[{"type": "text", "text": {"content": "Projects"}}],
             properties={
                 "Name": {"title": {}},
-                "Last Updated": {"date": {}},
-                "Status": {"status": {}}  # Status options are configured in the UI
+                "Version": {"rich_text": {}},
+                "Last Updated": {"date": {}}
             }
         )
+        
         logger.info(f"Created new documentation table with ID: {new_db['id']}")
         return new_db['id']
 
@@ -72,6 +86,7 @@ class NotionPlugin(BasePlugin):
         self.notion_token = self.config["notion_token"]
         self.database_id = self.config["database_id"]
         self.parent_page_id = self.config["parent_page_id"]
+        self.version = self.config["version"]
         
         # Initialize Notion client
         self.notion = Client(auth=self.notion_token)
@@ -315,14 +330,24 @@ class NotionPlugin(BasePlugin):
         # Convert HTML elements to Notion blocks
         blocks = self._convert_html_to_blocks(str(main_content))
 
-        # Search for existing project
+        # Search for existing project with same name and version
         results = self.notion.databases.query(
             database_id=self.database_id,
             filter={
-                "property": "Name",
-                "title": {
-                    "equals": project_name
-                }
+                "and": [
+                    {
+                        "property": "Name",
+                        "title": {
+                            "equals": project_name
+                        }
+                    },
+                    {
+                        "property": "Version",
+                        "rich_text": {
+                            "equals": self.version
+                        }
+                    }
+                ]
             }
         ).get("results", [])
 
@@ -332,6 +357,13 @@ class NotionPlugin(BasePlugin):
                 "title": [{
                     "text": {
                         "content": project_name
+                    }
+                }]
+            },
+            "Version": {
+                "rich_text": [{
+                    "text": {
+                        "content": self.version
                     }
                 }]
             },
@@ -346,24 +378,24 @@ class NotionPlugin(BasePlugin):
             # Delete existing project (this will delete all children too)
             project_page = results[0]
             self.notion.pages.update(project_page["id"], archived=True)
-            logger.info(f"Deleted existing project: {project_name}")
+            logger.info(f"Deleted existing project: {project_name} version {self.version}")
 
         # Create new project
         project_page = self.notion.pages.create(
             parent={"database_id": self.database_id},
             properties=properties
         )
-        logger.info(f"Created new project: {project_name}")
+        logger.info(f"Created new project: {project_name} version {self.version}")
 
         # Create index page under the project
         index_page = self.notion.pages.create(
             parent={"page_id": project_page["id"]},
             properties={
-                "title": [{"text": {"content": project_name}}]
+                "title": [{"text": {"content": project_name}}]  # Use original name without version
             },
             children=blocks
         )
-        logger.info(f"Created index page: {project_name}")
+        logger.info(f"Created index page for {project_name} version {self.version}")
 
         # Store for navigation
         self.pages.append({
