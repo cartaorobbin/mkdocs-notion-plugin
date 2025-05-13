@@ -20,7 +20,7 @@ class NotionPlugin(BasePlugin):
     """Plugin for publishing MkDocs content to Notion."""
 
     config_scheme = (
-        ("notion_token", Type(str, required=True)),
+        ("notion_token", Type(str, required=False)),
         ("database_id", Type(str, required=True)),
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
@@ -83,7 +83,11 @@ class NotionPlugin(BasePlugin):
 
     def on_config(self, config: Config) -> Config:
         """Process the configuration and initialize Notion client."""
-        self.notion_token = self.config["notion_token"]
+        # Get Notion token from environment variable or config
+        self.notion_token = os.environ.get("NOTION_TOKEN") or self.config.get("notion_token")
+        if not self.notion_token:
+            raise ValueError("Notion token must be provided either through NOTION_TOKEN environment variable or in mkdocs.yml")
+            
         self.database_id = self.config["database_id"]
         self.parent_page_id = self.config["parent_page_id"]
         self.version = self.config["version"]
