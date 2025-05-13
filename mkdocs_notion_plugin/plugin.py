@@ -203,7 +203,7 @@ class NotionPlugin(BasePlugin):
                         "annotations": {"italic": True, "color": "gray"}
                     }, {
                         "type": "text",
-                        "text": {"content": prev_page['title'], "link": {"url": f"https://notion.so/{prev_page['notion_id'].replace('-', '')}"}},
+                        "text": {"content": prev_page['title'], "link": {"url": f"https://www.notion.so/{prev_page['notion_id'].replace('-', '')}#internal"}},
                         "annotations": {"bold": True, "color": "blue"}
                     }]
                 }
@@ -221,7 +221,7 @@ class NotionPlugin(BasePlugin):
                         "annotations": {"italic": True, "color": "gray"}
                     }, {
                         "type": "text",
-                        "text": {"content": next_page['title'] + " →", "link": {"url": f"https://notion.so/{next_page['notion_id'].replace('-', '')}"}},
+                        "text": {"content": next_page['title'] + " →", "link": {"url": f"https://www.notion.so/{next_page['notion_id'].replace('-', '')}#internal"}},
                         "annotations": {"bold": True, "color": "blue"}
                     }]
                 }
