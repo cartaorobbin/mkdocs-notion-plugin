@@ -3,14 +3,11 @@
 This module contains unit tests for the NotionPlugin class.
 """
 
-import pytest
-from mkdocs.config import Config
-from mkdocs.config.base import ValidationError
 
 from mkdocs_notion_plugin.plugin import NotionPlugin
 
 # Test constants to avoid hardcoded credentials in assertions
-TEST_TOKEN = "test-token"
+TEST_TOKEN = "test-token"  # noqa: S105
 TEST_DB_ID = "test-db-id"
 TEST_CACHE_DIR = "custom-cache"
 
@@ -43,4 +40,3 @@ def test_plugin_config():
     assert plugin.config["notion_token"] == TEST_TOKEN
 
     assert plugin.config["cache_dir"] == TEST_CACHE_DIR
-

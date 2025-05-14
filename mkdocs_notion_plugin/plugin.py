@@ -49,7 +49,7 @@ class NotionPlugin(BasePlugin):
         """
         if self.notion is None:
             raise RuntimeError("Notion client is not initialized")
-            
+
         # First check if we already have a table in the parent page
         results = self.notion.search(query="Projects", filter={"property": "object", "value": "database"}).get(
             "results", []
@@ -218,7 +218,7 @@ class NotionPlugin(BasePlugin):
 
         return nav_blocks
 
-    def on_post_build(self, config: Config) -> None:
+    def on_post_build(self, config: Config) -> None:  # noqa: C901
         """Publish the generated documentation to Notion after build."""
         # Create or update the project in the Projects table
         project_name = config["site_name"]
