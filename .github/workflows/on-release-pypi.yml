@@ -33,9 +33,9 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.vars.outputs.RELEASE_VERSION }}
       
-      - name: Publish to CodeArtifact
+      - name: Publish to Pypi
         env:
-          CODEARTIFACT_REPOSITORY_NAME: ${{ vars.CODEARTIFACT_REPOSITORY_NAME }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
           source .venv/bin/activate
           make publish
