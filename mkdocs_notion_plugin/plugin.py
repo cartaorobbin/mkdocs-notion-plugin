@@ -27,7 +27,7 @@ class NotionPlugin(BasePlugin):
     )
 
     config_scheme = (
-        ("notion_token", Type(str, required=True)),
+        ("notion_token", Type(str, required=False)),
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
         ("cache_dir", Type(str, default=".notion_cache")),
@@ -107,6 +107,7 @@ class NotionPlugin(BasePlugin):
     def on_config(self, config: Config) -> Optional[MkDocsConfig]:
         """Process the configuration and initialize Notion client."""
         # Get Notion token from environment variable or config
+
         self.notion_token = os.environ.get("NOTION_TOKEN") or self.config.get("notion_token")
         if not self.notion_token:
             raise ValueError(self.ERROR_NO_TOKEN)
