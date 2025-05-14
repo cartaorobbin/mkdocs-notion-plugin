@@ -78,13 +78,16 @@ class TableConverter(BlockConverter):
         # Extract headers and rows
         headers = []
         thead = element.find("thead")
-        if thead:
+        if isinstance(thead, Tag):
             headers = [cell.get_text() for cell in thead.find_all(["th", "td"])]
 
         rows = []
-        tbody = element.find("tbody") or element
-        for tr in tbody.find_all("tr"):
-            rows.append([cell.get_text() for cell in tr.find_all(["td", "th"])])
+        tbody_elem = element.find("tbody")
+        tbody = tbody_elem if isinstance(tbody_elem, Tag) else element
+        if isinstance(tbody, Tag):
+            for tr in tbody.find_all("tr"):
+                if isinstance(tr, Tag):
+                    rows.append([cell.get_text() for cell in tr.find_all(["td", "th"])])
 
         if not rows:
             return None
