@@ -280,7 +280,7 @@ class NotionPlugin(BasePlugin):
                 continue
 
             relative_path = html_file.relative_to(site_dir)
-            logger.info(f"Processing {relative_path}")
+            logger.debug(f"Processing {relative_path}")
 
             # Read and parse HTML content
             with open(html_file, encoding="utf-8") as f:
@@ -295,7 +295,7 @@ class NotionPlugin(BasePlugin):
 
             # Count child elements for logging
             child_elements = main_content.find_all(recursive=False)
-            logger.info(f"Found {len(child_elements)} child elements in main content")
+            logger.debug(f"Found {len(child_elements)} child elements in main content")
 
             # Convert HTML elements to Notion blocks
             blocks = self._convert_html_to_blocks(str(main_content))
@@ -324,6 +324,6 @@ class NotionPlugin(BasePlugin):
                     # Append navigation blocks to the page
                     for block in nav_blocks:
                         self.notion.blocks.children.append(block_id=page_info["notion_id"], children=[block])
-                    logger.info(f"Added navigation to: {page_info['title']}")
+                    logger.debug(f"Added navigation to: {page_info['title']}")
             except Exception:
                 logger.exception(f"Failed to add navigation to {page_info['path']}")

@@ -218,14 +218,14 @@ def convert_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
                         block = converter.convert(code)
                         if block:
                             blocks.append(block)
-                            logger.info(f"Added {code.name} block: {block['type']}")
+                            logger.debug(f"Added {code.name} block: {block['type']}")
                 continue
         converter = factory.get_converter(element)
         if converter:
             block = converter.convert(element)
             if block:
                 blocks.append(block)
-                logger.info(f"Added {element.name} block: {block['type']}")
+                logger.debug(f"Added {element.name} block: {block['type']}")
 
-    logger.info(f"Created {len(blocks)} blocks total")
+    logger.debug(f"Created {len(blocks)} blocks total")
     return blocks
