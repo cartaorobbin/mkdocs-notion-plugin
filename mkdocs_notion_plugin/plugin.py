@@ -243,6 +243,9 @@ class NotionPlugin(BasePlugin):
         blocks = self._convert_html_to_blocks(str(main_content))
 
         # Search for existing project with same name and version
+        if self.notion is None:
+            raise RuntimeError("Notion client is not initialized")
+
         results = self.notion.databases.query(
             database_id=self.database_id,
             filter={
