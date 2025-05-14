@@ -12,6 +12,8 @@ from mkdocs.config.config_options import Type
 from mkdocs.plugins import BasePlugin
 from notion_client import Client
 
+from .blocks import convert_html_to_blocks
+
 logger = logging.getLogger("mkdocs.plugins.notion")
 
 
@@ -113,137 +115,15 @@ class NotionPlugin(BasePlugin):
         return relative_path.stem.replace("-", " ").replace("_", " ").title()
 
     def _convert_html_to_blocks(self, html_content: str) -> List[Dict[str, Any]]:
-        """Convert HTML content to Notion blocks."""
-        soup = BeautifulSoup(html_content, "html.parser")
+        """Convert HTML content to Notion blocks.
 
-        # Find the main content area in MkDocs ReadTheDocs theme
-        document = soup.find("div", {"role": "main", "class": "document"})
-        main_content = document.find("div", {"class": "section"}) if document else None
-        if not main_content:
-            main_content = soup
-            logger.warning("Could not find main content area, using entire document")
+        Args:
+            html_content: HTML string to convert
 
-        blocks = []
-        logger.info(f"Found {len(list(main_content.children))} child elements in main content")
-        for element in main_content.children:
-            if element.name is None:  # Skip text nodes
-                continue
-            logger.info(f"Processing element: {element.name}")
-
-            block = None
-            if element.name == "h1":
-                block = {
-                    "object": "block",
-                    "type": "heading_1",
-                    "heading_1": {"rich_text": [{"text": {"content": element.get_text()}}]},
-                }
-            elif element.name == "h2":
-                block = {
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {"rich_text": [{"text": {"content": element.get_text()}}]},
-                }
-            elif element.name == "p":
-                block = {
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {"rich_text": [{"text": {"content": element.get_text()}}]},
-                }
-            elif element.name == "pre":
-                code_element = element.find("code")
-                if code_element:
-                    # Get language from class (e.g., 'language-mermaid' -> 'mermaid')
-                    classes = code_element.get("class", [])
-                    language = ""
-                    for cls in classes:
-                        if cls.startswith("language-"):
-                            language = cls.replace("language-", "")
-                            break
-
-                    # Get raw content, preserving newlines and whitespace
-                    content = code_element.string if code_element.string else code_element.get_text()
-                    content = content.strip()
-
-                    # Get the language, defaulting to plain text
-                    language = language.lower() if language else "plain text"
-
-                    # Create the code block
-                    block = {
-                        "object": "block",
-                        "type": "code",
-                        "code": {
-                            "rich_text": [{"type": "text", "text": {"content": content}}],
-                            "language": language,
-                        },
-                    }
-            elif element.name in ["ul", "ol"]:
-                for li in element.find_all("li", recursive=False):
-                    list_block = {
-                        "object": "block",
-                        "type": "bulleted_list_item" if element.name == "ul" else "numbered_list_item",
-                        "bulleted_list_item" if element.name == "ul" else "numbered_list_item": {
-                            "rich_text": [{"text": {"content": li.get_text()}}]
-                        },
-                    }
-                    blocks.append(list_block)
-                    logger.info(f"Added {element.name} item: {li.get_text()[:50]}...")
-                continue  # Skip the main block append since we handled the items
-            elif element.name == "blockquote":
-                block = {
-                    "object": "block",
-                    "type": "quote",
-                    "quote": {"rich_text": [{"text": {"content": element.get_text()}}]},
-                }
-            elif element.name == "table":
-                rows = []
-                # Get headers
-                headers = (
-                    [th.get_text() for th in element.find("thead").find_all("th")] if element.find("thead") else []
-                )
-                # Get rows
-                tbody = element.find("tbody")
-                if tbody:
-                    for tr in tbody.find_all("tr"):
-                        rows.append([td.get_text() for td in tr.find_all("td")])
-
-                block = {
-                    "object": "block",
-                    "type": "table",
-                    "table": {
-                        "table_width": len(headers) if headers else (len(rows[0]) if rows else 1),
-                        "has_column_header": bool(headers),
-                        "has_row_header": False,
-                        "children": (
-                            [
-                                {
-                                    "type": "table_row",
-                                    "table_row": {
-                                        "cells": [
-                                            [{"type": "text", "text": {"content": cell}}]
-                                            for cell in (headers if headers else rows[0])
-                                        ]
-                                    },
-                                }
-                            ]
-                            + [
-                                {
-                                    "type": "table_row",
-                                    "table_row": {
-                                        "cells": [[{"type": "text", "text": {"content": cell}}] for cell in row]
-                                    },
-                                }
-                                for row in (rows if headers else rows[1:])
-                            ]
-                        ),
-                    },
-                }
-
-            if block:
-                blocks.append(block)
-                logger.info(f"Added {element.name} block: {block['type']}")
-
-        logger.info(f"Created {len(blocks)} blocks total")
-        return blocks
+        Returns:
+            List[Dict[str, Any]]: List of Notion blocks
+        """
+        return convert_html_to_blocks(html_content)
 
     def _add_navigation_block(self, current_index: int) -> List[Dict[str, Any]]:
         """Create navigation blocks for the current page."""
