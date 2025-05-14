@@ -18,6 +18,9 @@ logger = logging.getLogger("mkdocs.plugins.notion")
 class NotionPlugin(BasePlugin):
     """Plugin for publishing MkDocs content to Notion."""
 
+    # Error messages
+    ERROR_NO_TOKEN = "Notion token must be provided either through NOTION_TOKEN environment variable or in mkdocs.yml"  # noqa: S105
+
     config_scheme = (
         ("notion_token", Type(str, required=False)),
         ("database_id", Type(str, required=True)),
@@ -74,9 +77,7 @@ class NotionPlugin(BasePlugin):
         # Get Notion token from environment variable or config
         self.notion_token = os.environ.get("NOTION_TOKEN") or self.config.get("notion_token")
         if not self.notion_token:
-            raise ValueError(
-                "Notion token must be provided either through NOTION_TOKEN environment variable or in mkdocs.yml"
-            )
+            raise ValueError(self.ERROR_NO_TOKEN)
 
         self.database_id = self.config["database_id"]
         self.parent_page_id = self.config["parent_page_id"]
@@ -444,5 +445,5 @@ class NotionPlugin(BasePlugin):
                     for block in nav_blocks:
                         self.notion.blocks.children.append(block_id=page_info["notion_id"], children=[block])
                     logger.info(f"Added navigation to: {page_info['title']}")
-            except Exception as e:
-                logger.error(f"Failed to add navigation to {page_info['path']}: {e!s}")
+            except Exception:
+                logger.exception(f"Failed to add navigation to {page_info['path']}")
