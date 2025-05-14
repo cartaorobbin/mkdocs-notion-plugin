@@ -1,10 +1,10 @@
 """HTML to Notion block converters."""
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
 from bs4 import BeautifulSoup, Tag
-import logging
 
 logger = logging.getLogger("mkdocs.plugins.notion")
 
@@ -46,13 +46,11 @@ class HeadingConverter(BlockConverter):
     def convert(self, element: Tag) -> Optional[Dict[str, Any]]:
         heading_level = int(element.name[1])  # Get number from h1-h6
         heading_type = f"heading_{min(heading_level, 3)}"  # Notion only supports h1-h3
-        
+
         return {
             "object": "block",
             "type": heading_type,
-            heading_type: {
-                "rich_text": [{"type": "text", "text": {"content": element.get_text()}}]
-            },
+            heading_type: {"rich_text": [{"type": "text", "text": {"content": element.get_text()}}]},
         }
 
 
@@ -66,9 +64,7 @@ class ParagraphConverter(BlockConverter):
         return {
             "object": "block",
             "type": "paragraph",
-            "paragraph": {
-                "rich_text": [{"type": "text", "text": {"content": element.get_text()}}]
-            },
+            "paragraph": {"rich_text": [{"type": "text", "text": {"content": element.get_text()}}]},
         }
 
 
@@ -105,16 +101,17 @@ class TableConverter(BlockConverter):
                         {
                             "type": "table_row",
                             "table_row": {
-                                "cells": [[{"type": "text", "text": {"content": cell}}] for cell in (headers if headers else rows[0])]
+                                "cells": [
+                                    [{"type": "text", "text": {"content": cell}}]
+                                    for cell in (headers if headers else rows[0])
+                                ]
                             },
                         }
                     ]
                     + [
                         {
                             "type": "table_row",
-                            "table_row": {
-                                "cells": [[{"type": "text", "text": {"content": cell}}] for cell in row]
-                            },
+                            "table_row": {"cells": [[{"type": "text", "text": {"content": cell}}] for cell in row]},
                         }
                         for row in (rows if headers else rows[1:])
                     ]
@@ -149,7 +146,7 @@ class CodeBlockConverter(BlockConverter):
                     }
                     language = language_map.get(lang, lang)
                     break
-        
+
         return {
             "object": "block",
             "type": "code",

@@ -21,11 +21,12 @@ class NotionPlugin(BasePlugin):
     """Plugin for publishing MkDocs content to Notion."""
 
     # Error messages
-    ERROR_NO_TOKEN = "Notion token must be provided either through NOTION_TOKEN environment variable or in mkdocs.yml"  # noqa: S105
+    ERROR_NO_TOKEN = (
+        "Notion token must be provided either through NOTION_TOKEN environment variable or in mkdocs.yml"  # noqa: S105
+    )
 
     config_scheme = (
         ("notion_token", Type(str, required=False)),
-
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
     )
@@ -80,7 +81,6 @@ class NotionPlugin(BasePlugin):
         self.notion_token = os.environ.get("NOTION_TOKEN") or self.config.get("notion_token")
         if not self.notion_token:
             raise ValueError(self.ERROR_NO_TOKEN)
-
 
         self.parent_page_id = self.config["parent_page_id"]
         self.version = self.config["version"]

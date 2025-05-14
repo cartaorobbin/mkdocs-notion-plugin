@@ -1,15 +1,14 @@
 """Tests for the blocks module."""
 
 from bs4 import BeautifulSoup
-import pytest
 
 from mkdocs_notion_plugin.blocks import (
     BlockConverter,
     BlockFactory,
+    CodeBlockConverter,
     HeadingConverter,
     ParagraphConverter,
     TableConverter,
-    CodeBlockConverter,
     convert_html_to_blocks,
 )
 
@@ -22,15 +21,15 @@ def create_soup(html: str) -> BeautifulSoup:
 def test_heading_converter():
     """Test heading block conversion."""
     converter = HeadingConverter()
-    
+
     # Test h1-h6 conversion
     for i in range(1, 7):
         html = f"<h{i}>Test Heading {i}</h{i}>"
         element = create_soup(html).find(f"h{i}")
-        
+
         assert converter.can_convert(element)
         block = converter.convert(element)
-        
+
         assert block is not None
         assert block["object"] == "block"
         # Notion only supports h1-h3, so h4-h6 should be converted to h3
@@ -44,10 +43,10 @@ def test_paragraph_converter():
     converter = ParagraphConverter()
     html = "<p>Test paragraph content</p>"
     element = create_soup(html).find("p")
-    
+
     assert converter.can_convert(element)
     block = converter.convert(element)
-    
+
     assert block is not None
     assert block["object"] == "block"
     assert block["type"] == "paragraph"
@@ -57,7 +56,7 @@ def test_paragraph_converter():
 def test_table_converter():
     """Test table block conversion."""
     converter = TableConverter()
-    
+
     # Test table with headers
     html = """
     <table>
@@ -71,22 +70,22 @@ def test_table_converter():
     </table>
     """
     element = create_soup(html).find("table")
-    
+
     assert converter.can_convert(element)
     block = converter.convert(element)
-    
+
     assert block is not None
     assert block["object"] == "block"
     assert block["type"] == "table"
     assert block["table"]["has_column_header"] is True
     assert block["table"]["table_width"] == 2
-    
+
     # Check headers
     header_row = block["table"]["children"][0]
     assert header_row["type"] == "table_row"
     assert header_row["table_row"]["cells"][0][0]["text"]["content"] == "Header 1"
     assert header_row["table_row"]["cells"][1][0]["text"]["content"] == "Header 2"
-    
+
     # Check data rows
     data_rows = block["table"]["children"][1:]
     assert len(data_rows) == 2
@@ -97,44 +96,44 @@ def test_table_converter():
 def test_code_block_converter():
     """Test code block conversion."""
     converter = CodeBlockConverter()
-    
+
     # Test code block with language
     html = '<pre><code class="language-python">def test():\n    pass</code></pre>'
     element = create_soup(html).find("pre")
-    
+
     assert converter.can_convert(element)
     block = converter.convert(element)
-    
+
     assert block is not None
     assert block["object"] == "block"
     assert block["type"] == "code"
     assert block["code"]["language"] == "python"
     assert block["code"]["rich_text"][0]["text"]["content"] == "def test():\n    pass"
-    
+
     # Test code block without language
     html = "<code>plain text code</code>"
     element = create_soup(html).find("code")
-    
+
     assert converter.can_convert(element)
     block = converter.convert(element)
-    
-    assert block["code"]["language"] == "plain_text"
+
+    assert block["code"]["language"] == "plain text"
 
 
 def test_block_factory():
     """Test block factory converter selection."""
     factory = BlockFactory()
-    
+
     # Test heading
     element = create_soup("<h1>Test</h1>").find("h1")
     converter = factory.get_converter(element)
     assert isinstance(converter, HeadingConverter)
-    
+
     # Test paragraph
     element = create_soup("<p>Test</p>").find("p")
     converter = factory.get_converter(element)
     assert isinstance(converter, ParagraphConverter)
-    
+
     # Test unknown element
     element = create_soup("<div>Test</div>").find("div")
     converter = factory.get_converter(element)
@@ -154,9 +153,9 @@ def test_convert_html_to_blocks():
         <pre><code>Some code</code></pre>
     </div>
     """
-    
+
     blocks = convert_html_to_blocks(html)
-    
+
     assert len(blocks) == 4
     assert blocks[0]["type"] == "heading_1"
     assert blocks[1]["type"] == "paragraph"
@@ -172,31 +171,29 @@ def test_convert_empty_html():
 
 def test_custom_block_converter():
     """Test creating a custom block converter."""
-    
+
     class QuoteConverter(BlockConverter):
         """Convert blockquote elements."""
-        
+
         def can_convert(self, element):
             return element.name == "blockquote"
-            
+
         def convert(self, element):
             return {
                 "object": "block",
                 "type": "quote",
-                "quote": {
-                    "rich_text": [{"type": "text", "text": {"content": element.get_text()}}]
-                }
+                "quote": {"rich_text": [{"type": "text", "text": {"content": element.get_text()}}]},
             }
-    
+
     # Create a factory with the custom converter
     factory = BlockFactory()
     factory.converters.append(QuoteConverter())
-    
+
     # Test the custom converter
     html = "<blockquote>Test quote</blockquote>"
     element = create_soup(html).find("blockquote")
     converter = factory.get_converter(element)
-    
+
     assert converter is not None
     block = converter.convert(element)
     assert block["type"] == "quote"

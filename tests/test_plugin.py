@@ -10,7 +10,7 @@ from mkdocs.config.base import ValidationError
 from mkdocs_notion_plugin.plugin import NotionPlugin
 
 # Test constants to avoid hardcoded credentials in assertions
-TEST_TOKEN = "test-token"  # noqa: S105
+TEST_TOKEN = "test-token"
 TEST_DB_ID = "test-db-id"
 TEST_CACHE_DIR = "custom-cache"
 
@@ -47,7 +47,7 @@ def test_plugin_config():
 
 
 def test_plugin_required_config():
-    """Test that the plugin requires notion_token."""
+    """Test that the plugin requires notion_token.
 
     Returns:
         None
