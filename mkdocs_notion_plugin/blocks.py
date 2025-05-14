@@ -58,7 +58,7 @@ class ParagraphConverter(BlockConverter):
     """Convert HTML paragraph elements to Notion paragraph blocks."""
 
     def can_convert(self, element: Tag) -> bool:
-        return element.name == "p"
+        return bool(element.name == "p")
 
     def convert(self, element: Tag) -> Optional[Dict[str, Any]]:
         return {
@@ -72,7 +72,7 @@ class TableConverter(BlockConverter):
     """Convert HTML table elements to Notion table blocks."""
 
     def can_convert(self, element: Tag) -> bool:
-        return element.name == "table"
+        return bool(element.name == "table")
 
     def convert(self, element: Tag) -> Optional[Dict[str, Any]]:
         # Extract headers and rows
@@ -160,7 +160,7 @@ class CodeBlockConverter(BlockConverter):
 class BlockFactory:
     """Factory for creating block converters."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize with all available converters."""
         self.converters = [
             HeadingConverter(),
