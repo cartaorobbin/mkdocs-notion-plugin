@@ -26,17 +26,19 @@ class NotionPlugin(BasePlugin):
     )
 
     config_scheme = (
-        ("notion_token", Type(str, required=False)),
+        ("notion_token", Type(str, required=True)),
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
+        ("cache_dir", Type(str, default=".notion_cache")),
     )
 
     def __init__(self):
-        """Initialize the plugin."""
+        super().__init__()
         self.notion_token: Optional[str] = None
         self.database_id: Optional[str] = None
         self.parent_page_id: Optional[str] = None
         self.version: Optional[str] = None
+        self.cache_dir: str = ".notion_cache"
         self.notion: Optional[Client] = None
         self.pages: List[Dict[str, Any]] = []  # Store page info for navigation
 
