@@ -1,4 +1,5 @@
 """MkDocs plugin for Notion integration."""
+
 import logging
 import os
 from datetime import datetime
@@ -179,9 +180,9 @@ class NotionPlugin(BasePlugin):
                     list_block = {
                         "object": "block",
                         "type": "bulleted_list_item" if element.name == "ul" else "numbered_list_item",
-                        "bulleted_list_item"
-                        if element.name == "ul"
-                        else "numbered_list_item": {"rich_text": [{"text": {"content": li.get_text()}}]},
+                        "bulleted_list_item" if element.name == "ul" else "numbered_list_item": {
+                            "rich_text": [{"text": {"content": li.get_text()}}]
+                        },
                     }
                     blocks.append(list_block)
                     logger.info(f"Added {element.name} item: {li.get_text()[:50]}...")
@@ -211,24 +212,28 @@ class NotionPlugin(BasePlugin):
                         "table_width": len(headers) if headers else (len(rows[0]) if rows else 1),
                         "has_column_header": bool(headers),
                         "has_row_header": False,
-                        "children": [
-                            {
-                                "type": "table_row",
-                                "table_row": {
-                                    "cells": [
-                                        [{"type": "text", "text": {"content": cell}}]
-                                        for cell in (headers if headers else rows[0])
-                                    ]
-                                },
-                            }
-                        ]
-                        + [
-                            {
-                                "type": "table_row",
-                                "table_row": {"cells": [[{"type": "text", "text": {"content": cell}}] for cell in row]},
-                            }
-                            for row in (rows if headers else rows[1:])
-                        ],
+                        "children": (
+                            [
+                                {
+                                    "type": "table_row",
+                                    "table_row": {
+                                        "cells": [
+                                            [{"type": "text", "text": {"content": cell}}]
+                                            for cell in (headers if headers else rows[0])
+                                        ]
+                                    },
+                                }
+                            ]
+                            + [
+                                {
+                                    "type": "table_row",
+                                    "table_row": {
+                                        "cells": [[{"type": "text", "text": {"content": cell}}] for cell in row]
+                                    },
+                                }
+                                for row in (rows if headers else rows[1:])
+                            ]
+                        ),
                     },
                 }
 
@@ -440,4 +445,4 @@ class NotionPlugin(BasePlugin):
                         self.notion.blocks.children.append(block_id=page_info["notion_id"], children=[block])
                     logger.info(f"Added navigation to: {page_info['title']}")
             except Exception as e:
-                logger.error(f"Failed to add navigation to {page_info['path']}: {str(e)}")
+                logger.error(f"Failed to add navigation to {page_info['path']}: {e!s}")
