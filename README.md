@@ -28,14 +28,14 @@ Add the plugin to your `mkdocs.yml`:
 plugins:
   - notion:
       notion_token: your-notion-integration-token
-      database_id: your-notion-database-id
+
       cache_dir: .notion_cache  # optional
 ```
 
 ### Required Configuration
 
 - `notion_token`: Your Notion integration token. Create one at https://www.notion.so/my-integrations
-- `database_id`: The ID of the Notion database you want to sync
+
 
 ### Optional Configuration
 

@@ -23,7 +23,7 @@ def test_plugin_initialization():
     """
     plugin = NotionPlugin()
     assert plugin.notion_token is None
-    assert plugin.database_id is None
+
     assert plugin.cache_dir == ".notion_cache"
 
 
@@ -36,18 +36,18 @@ def test_plugin_config():
     plugin = NotionPlugin()
     config = {
         "notion_token": TEST_TOKEN,
-        "database_id": TEST_DB_ID,
+
         "cache_dir": TEST_CACHE_DIR,
     }
     plugin.load_config(config)
 
     assert plugin.config["notion_token"] == TEST_TOKEN
-    assert plugin.config["database_id"] == TEST_DB_ID
+
     assert plugin.config["cache_dir"] == TEST_CACHE_DIR
 
 
 def test_plugin_required_config():
-    """Test that the plugin requires notion_token and database_id.
+    """Test that the plugin requires notion_token."""
 
     Returns:
         None
@@ -69,7 +69,7 @@ def test_on_config():
     config = Config(schema=[])
     config_dict = {
         "notion_token": TEST_TOKEN,
-        "database_id": TEST_DB_ID,
+
         "cache_dir": TEST_CACHE_DIR,
     }
     plugin.load_config(config_dict)
@@ -78,7 +78,7 @@ def test_on_config():
 
     assert isinstance(result, Config)
     assert plugin.notion_token == TEST_TOKEN
-    assert plugin.database_id == TEST_DB_ID
+
     assert plugin.cache_dir == TEST_CACHE_DIR
 
 

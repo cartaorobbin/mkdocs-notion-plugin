@@ -84,7 +84,7 @@ Add the following to your `mkdocs.yml`:
 plugins:
   - notion:
       notion_token: ${NOTION_TOKEN}
-      database_id: ${NOTION_DATABASE_ID}
+
       parent_page_id: ${NOTION_PARENT_PAGE_ID}
 ```
 

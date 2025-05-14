@@ -33,7 +33,7 @@ Add the plugin to your `mkdocs.yml`:
 plugins:
   - notion:
       notion_token: your-notion-token
-      database_id: your-database-id
+
       parent_page_id: your-parent-page-id
 ```
 

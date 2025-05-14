@@ -6,6 +6,6 @@ theme:
 plugins:
   - search
   - notion:
-      database_id: 1e45c9c6eb9e80eda26ef7051cca23e9
+
       parent_page_id: 0cc7d539-ec4f-48c0-bf89-8a8abd3abb1b
       version: "1.0.1"

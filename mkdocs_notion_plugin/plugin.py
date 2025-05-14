@@ -25,7 +25,7 @@ class NotionPlugin(BasePlugin):
 
     config_scheme = (
         ("notion_token", Type(str, required=False)),
-        ("database_id", Type(str, required=True)),
+
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
     )
@@ -81,7 +81,7 @@ class NotionPlugin(BasePlugin):
         if not self.notion_token:
             raise ValueError(self.ERROR_NO_TOKEN)
 
-        self.database_id = self.config["database_id"]
+
         self.parent_page_id = self.config["parent_page_id"]
         self.version = self.config["version"]
 
