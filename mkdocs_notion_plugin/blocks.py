@@ -132,21 +132,23 @@ class CodeBlockConverter(BlockConverter):
     def convert(self, element: Tag) -> Optional[Dict[str, Any]]:
         code_element = element.find("code") if element.name == "pre" else element
         language = "plain text"  # Default to 'plain text' as required by Notion
-        if code_element.get("class"):
-            for cls in code_element.get("class"):
-                if cls.startswith("language-"):
-                    # Convert language identifier to Notion's format
-                    lang = cls.replace("language-", "")
-                    # Map common language identifiers to Notion's format
-                    language_map = {
-                        "js": "javascript",
-                        "py": "python",
-                        "rb": "ruby",
-                        "cs": "c#",
-                        "ts": "typescript",
-                        "sh": "shell",
-                        "plain_text": "plain text",
-                    }
+        if isinstance(code_element, Tag):
+            classes = code_element.get("class")
+            if classes:
+                for cls in classes:
+                    if cls.startswith("language-"):
+                        # Convert language identifier to Notion's format
+                        lang = cls.replace("language-", "")
+                        # Map common language identifiers to Notion's format
+                        language_map = {
+                            "js": "javascript",
+                            "py": "python",
+                            "rb": "ruby",
+                            "cs": "c#",
+                            "ts": "typescript",
+                            "sh": "shell",
+                            "plain_text": "plain text",
+                        }
                     language = language_map.get(lang, lang)
                     break
 
@@ -154,7 +156,14 @@ class CodeBlockConverter(BlockConverter):
             "object": "block",
             "type": "code",
             "code": {
-                "rich_text": [{"type": "text", "text": {"content": code_element.get_text()}}],
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": code_element.get_text() if isinstance(code_element, Tag) else str(code_element)
+                        },
+                    }
+                ],
                 "language": language,
             },
         }
@@ -187,7 +196,7 @@ class BlockFactory:
         return None
 
 
-def convert_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
+def convert_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:  # noqa: C901
     """Convert HTML content to Notion blocks.
 
     Args:
@@ -204,6 +213,9 @@ def convert_html_to_blocks(html_content: str) -> List[Dict[str, Any]]:
     main_content = soup.find("body") or soup
 
     # Process elements to avoid duplicates
+    if not isinstance(main_content, Tag):
+        return []
+
     for element in main_content.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "table", "pre"], recursive=True):
         # For pre tags, only process if they contain code
         if element.name == "pre" and not element.find("code"):
