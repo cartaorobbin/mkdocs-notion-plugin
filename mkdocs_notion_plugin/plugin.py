@@ -32,7 +32,7 @@ class NotionPlugin(BasePlugin):
         ("cache_dir", Type(str, default=".notion_cache")),
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.notion_token: Optional[str] = None
         self.database_id: Optional[str] = None
@@ -47,6 +47,9 @@ class NotionPlugin(BasePlugin):
         Returns:
             The database ID of the table.
         """
+        if self.notion is None:
+            raise RuntimeError("Notion client is not initialized")
+            
         # First check if we already have a table in the parent page
         results = self.notion.search(query="Projects", filter={"property": "object", "value": "database"}).get(
             "results", []
@@ -60,7 +63,7 @@ class NotionPlugin(BasePlugin):
                 required_props = {"Name", "Version", "Last Updated"}
                 if all(prop in properties for prop in required_props):
                     logger.info(f"Found existing projects table with ID: {db['id']}")
-                    return db["id"]
+                    return str(db["id"])
                 else:
                     # Archive the database if schema doesn't match
                     logger.info("Existing table has incorrect schema, recreating...")
@@ -75,7 +78,7 @@ class NotionPlugin(BasePlugin):
         )
 
         logger.info(f"Created new documentation table with ID: {new_db['id']}")
-        return new_db["id"]
+        return str(new_db["id"])
 
     def on_config(self, config: Config) -> Config:
         """Process the configuration and initialize Notion client."""
@@ -100,15 +103,19 @@ class NotionPlugin(BasePlugin):
         # Try to get the first h1 heading
         h1 = soup.find("h1")
         if h1:
-            return h1.get_text().strip()
+            text = h1.get_text()
+            return str(text).strip() if text is not None else ""
 
         # If no h1, try to get the title tag
         title = soup.find("title")
         if title:
             # Remove any theme suffix like ' - Documentation'
-            title_text = title.get_text().strip()
+            text = title.get_text()
+            if text is None:
+                return ""
+            title_text = str(text).strip()
             if " - " in title_text:
-                return title_text.split(" - ")[0]
+                return str(title_text.split(" - ")[0])
             return title_text
 
         # Fallback: Clean up the filename
