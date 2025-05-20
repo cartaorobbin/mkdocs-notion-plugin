@@ -113,7 +113,7 @@ class NotionPlugin(BasePlugin):
             raise ValueError(self.ERROR_NO_TOKEN)
 
         self.parent_page_id = self.config["parent_page_id"]
-        self.version = self.config["version"]
+        self.version = os.environ.get("NOTION_VERSION") or self.config["version"]
 
         # Initialize Notion client
         self.notion = Client(auth=self.notion_token)
