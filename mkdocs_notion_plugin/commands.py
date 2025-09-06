@@ -12,7 +12,7 @@ from .plugin import NotionPlugin
 logger = logging.getLogger("mkdocs.commands.notion")
 
 
-@click.command(name='notion-deploy')
+@click.command(name="notion-deploy")
 @click.option(
     "-f",
     "--config-file",
@@ -52,7 +52,7 @@ def notion_deploy(
     clean: bool = True,
 ) -> None:
     """Deploy MkDocs documentation to Notion.
-    
+
     This command builds the documentation and then deploys it to Notion
     using the configured Notion plugin settings.
     """
@@ -67,14 +67,14 @@ def notion_deploy(
     try:
         # Load MkDocs configuration
         config = load_config(config_file=config_file, strict=strict)
-        
+
         # Check if notion plugin is configured
         notion_plugin = None
         for plugin_name, plugin_instance in config.plugins.items():
-            if plugin_name == 'notion' or isinstance(plugin_instance, NotionPlugin):
+            if plugin_name == "notion" or isinstance(plugin_instance, NotionPlugin):
                 notion_plugin = plugin_instance
                 break
-        
+
         if not notion_plugin:
             click.echo("Error: Notion plugin is not configured in mkdocs.yml", err=True)
             click.echo("Please add the notion plugin to your mkdocs.yml configuration:", err=True)
@@ -88,19 +88,19 @@ def notion_deploy(
         # Build the documentation first
         click.echo("Building documentation...")
         build(config, dirty=not clean)
-        
+
         # Deploy to Notion
         click.echo("Deploying to Notion...")
-        
+
         # Initialize the plugin if not already done
         if not notion_plugin.notion:
             notion_plugin.on_config(config)
-        
+
         # Call the deployment logic from the plugin directly
         notion_plugin.deploy_to_notion(config)
-        
+
         click.echo("✅ Successfully deployed documentation to Notion!")
-        
+
     except Exception as e:
         click.echo(f"❌ Error during deployment: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort() from e
