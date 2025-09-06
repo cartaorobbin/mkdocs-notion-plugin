@@ -28,25 +28,78 @@ Add the plugin to your `mkdocs.yml`:
 plugins:
   - notion:
       notion_token: your-notion-integration-token
-
+      parent_page_id: your-parent-page-id
+      version: your-version
       cache_dir: .notion_cache  # optional
+      deploy_on_build: false  # optional
 ```
 
 ### Required Configuration
 
 - `notion_token`: Your Notion integration token. Create one at https://www.notion.so/my-integrations
-
+- `parent_page_id`: The ID of the Notion page where your documentation will be deployed
+- `version`: Version identifier for your documentation
 
 ### Optional Configuration
 
 - `cache_dir`: Directory to store cached Notion content (default: `.notion_cache`)
+- `deploy_on_build`: Whether to automatically deploy to Notion during build (default: `false`)
 
 ## Usage
 
 1. Create a Notion integration and get your token
 2. Share your Notion database with the integration
 3. Configure the plugin in your `mkdocs.yml`
-4. Build your documentation
+4. Deploy your documentation using one of these methods:
+
+### Method 1: Manual Deployment (Recommended)
+
+Build and deploy separately for better control:
+
+```bash
+# Build your documentation
+mkdocs build
+
+# Deploy to Notion
+mkdocs notion-deploy
+
+# Or if using Poetry for development
+poetry run mkdocs notion-deploy
+```
+
+### Method 2: Automatic Deployment
+
+Enable automatic deployment during build by adding `deploy_on_build: true` to your configuration:
+
+```yaml
+plugins:
+  - notion:
+      notion_token: your-notion-integration-token
+      parent_page_id: your-parent-page-id
+      version: your-version
+      deploy_on_build: true  # Enable automatic deployment
+```
+
+Then simply run:
+
+```bash
+mkdocs build
+```
+
+### Command Options
+
+The notion-deploy command supports several options:
+
+```bash
+mkdocs notion-deploy --help
+
+Options:
+  -f, --config-file FILE  Provide a specific MkDocs config file
+  -s, --strict            Enable strict mode (abort on warnings)
+  -v, --verbose           Enable verbose output
+  -q, --quiet             Silence warnings
+  --clean / --dirty       Remove old files before building (default: clean)
+```
 
 ## Development
 

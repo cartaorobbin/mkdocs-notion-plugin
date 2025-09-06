@@ -31,6 +31,7 @@ class NotionPlugin(BasePlugin):
         ("parent_page_id", Type(str, required=True)),
         ("version", Type(str, required=True)),
         ("cache_dir", Type(str, default=".notion_cache")),
+        ("deploy_on_build", Type(bool, default=False)),
     )
 
     def __init__(self) -> None:
@@ -246,8 +247,20 @@ class NotionPlugin(BasePlugin):
 
         return nav_blocks
 
-    def on_post_build(self, config: MkDocsConfig) -> None:  # noqa: C901
+    def on_post_build(self, config: MkDocsConfig) -> None:
         """Publish the generated documentation to Notion after build."""
+        # Only deploy automatically if deploy_on_build is enabled
+        if not self.config.get("deploy_on_build", False):
+            logger.info(
+                "Skipping Notion deployment (deploy_on_build is disabled). Use 'mkdocs notion-deploy' to deploy"
+                " manually."
+            )
+            return
+
+        self.deploy_to_notion(config)
+
+    def deploy_to_notion(self, config: MkDocsConfig) -> None:  # noqa: C901
+        """Deploy the generated documentation to Notion."""
         # Create or update the project in the Projects table
         project_name = config["site_name"]
         logger.info(f"Creating/updating project: {project_name}")
