@@ -1,12 +1,20 @@
 # mkdocs-notion-plugin
 
-[![Release](https://img.shields.io/github/v/release/tomas_correa/mkdocs-notion-plugin)](https://img.shields.io/github/v/release/tomas_correa/mkdocs-notion-plugin)
-[![Build status](https://img.shields.io/github/actions/workflow/status/tomas_correa/mkdocs-notion-plugin/main.yml?branch=main)](https://github.com/tomas_correa/mkdocs-notion-plugin/actions/workflows/main.yml?query=branch%3Amain)
-[![codecov](https://codecov.io/gh/tomas_correa/mkdocs-notion-plugin/branch/main/graph/badge.svg)](https://codecov.io/gh/tomas_correa/mkdocs-notion-plugin)
-[![Commit activity](https://img.shields.io/github/commit-activity/m/tomas_correa/mkdocs-notion-plugin)](https://img.shields.io/github/commit-activity/m/tomas_correa/mkdocs-notion-plugin)
-[![License](https://img.shields.io/github/license/tomas_correa/mkdocs-notion-plugin)](https://img.shields.io/github/license/tomas_correa/mkdocs-notion-plugin)
+[![Release](https://img.shields.io/github/v/release/cartaorobbin/mkdocs-notion-plugin)](https://github.com/cartaorobbin/mkdocs-notion-plugin/releases)
+[![Build status](https://img.shields.io/github/actions/workflow/status/cartaorobbin/mkdocs-notion-plugin/main.yml?branch=main)](https://github.com/cartaorobbin/mkdocs-notion-plugin/actions/workflows/main.yml)
+[![Python](https://img.shields.io/pypi/pyversions/mkdocs-notion-plugin)](https://pypi.org/project/mkdocs-notion-plugin/)
+[![codecov](https://codecov.io/gh/cartaorobbin/mkdocs-notion-plugin/branch/main/graph/badge.svg)](https://codecov.io/gh/cartaorobbin/mkdocs-notion-plugin)
+[![License](https://img.shields.io/github/license/cartaorobbin/mkdocs-notion-plugin)](https://github.com/cartaorobbin/mkdocs-notion-plugin/blob/main/LICENSE)
 
 A MkDocs plugin that integrates Notion content into your documentation.
+
+> ⚠️ **Development Phase Warning**
+> 
+> This project is currently in active development and **NOT ready for production use**. 
+> Features may be incomplete, APIs may change without notice, and stability is not guaranteed.
+> Use at your own risk and expect breaking changes between versions.
+> 
+> We welcome feedback and contributions, but please do not use this in production environments yet.
 
 ## Features
 
