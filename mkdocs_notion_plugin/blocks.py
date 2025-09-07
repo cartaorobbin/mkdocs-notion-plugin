@@ -169,19 +169,8 @@ class TableConverter(BlockConverter):
         # Truncate if necessary
         truncated_content = truncate_text_content(code_content.strip())
 
-        # Try to detect language from classes
-        language = "plain text"
-        for elem in element.find_all(class_=True):
-            classes = elem.get("class", [])
-            if isinstance(classes, str):
-                classes = [classes]
-            for cls in classes:
-                if cls.startswith("language-"):
-                    language = cls.replace("language-", "")
-                    break
-                elif cls.startswith("highlight-"):
-                    language = cls.replace("highlight-", "")
-                    break
+        # Use the same language validation as CodeBlockConverter
+        language = self._validate_language_for_notion(element)
 
         logger.info(f"Converted code highlighting table to code block (language: {language})")
 
@@ -198,6 +187,161 @@ class TableConverter(BlockConverter):
                 "language": language,
             },
         }
+
+    def _validate_language_for_notion(self, element: Tag) -> str:
+        """Validate and map language to Notion's supported languages."""
+        # Notion's supported languages (from the API error message)
+        notion_supported_languages = {
+            "abap",
+            "abc",
+            "agda",
+            "arduino",
+            "ascii art",
+            "assembly",
+            "bash",
+            "basic",
+            "bnf",
+            "c",
+            "clojure",
+            "coffeescript",
+            "coq",
+            "css",
+            "dart",
+            "dhall",
+            "diff",
+            "docker",
+            "ebnf",
+            "elixir",
+            "elm",
+            "erlang",
+            "f#",
+            "flow",
+            "fortran",
+            "gherkin",
+            "glsl",
+            "go",
+            "graphql",
+            "groovy",
+            "haskell",
+            "hcl",
+            "html",
+            "idris",
+            "java",
+            "javascript",
+            "json",
+            "julia",
+            "kotlin",
+            "latex",
+            "less",
+            "lisp",
+            "livescript",
+            "llvm ir",
+            "lua",
+            "makefile",
+            "markdown",
+            "markup",
+            "matlab",
+            "mathematica",
+            "mermaid",
+            "nix",
+            "notion formula",
+            "objective-c",
+            "ocaml",
+            "pascal",
+            "perl",
+            "php",
+            "plain text",
+            "powershell",
+            "prolog",
+            "protobuf",
+            "purescript",
+            "python",
+            "r",
+            "racket",
+            "reason",
+            "ruby",
+            "rust",
+            "sass",
+            "scala",
+            "scheme",
+            "scss",
+            "shell",
+            "smalltalk",
+            "solidity",
+            "sql",
+            "swift",
+            "toml",
+            "typescript",
+            "vb.net",
+            "verilog",
+            "vhdl",
+            "visual basic",
+            "webassembly",
+            "xml",
+            "yaml",
+            "java/c/c++/c#",
+        }
+
+        # Map common language identifiers to Notion's supported languages
+        language_map = {
+            "js": "javascript",
+            "py": "python",
+            "rb": "ruby",
+            "cs": "c#",
+            "ts": "typescript",
+            "sh": "shell",
+            "bash": "shell",
+            "plain_text": "plain text",
+            "yml": "yaml",
+            "dockerfile": "docker",
+            "md": "markdown",
+            "tex": "latex",
+            "c++": "java/c/c++/c#",
+            "cpp": "java/c/c++/c#",
+            "csharp": "c#",
+            "jinja2": "html",  # Map jinja2 templates to HTML
+            "jinja": "html",  # Map jinja templates to HTML
+            "j2": "html",  # Map j2 templates to HTML
+            "django": "html",  # Map django templates to HTML
+            "handlebars": "html",  # Map handlebars templates to HTML
+            "mustache": "html",  # Map mustache templates to HTML
+            "twig": "html",  # Map twig templates to HTML
+            "liquid": "html",  # Map liquid templates to HTML
+            "vue": "html",  # Map vue templates to HTML
+            "svelte": "html",  # Map svelte templates to HTML
+            "jsx": "javascript",  # Map JSX to JavaScript
+            "tsx": "typescript",  # Map TSX to TypeScript
+        }
+
+        # Try to detect language from classes
+        language = "plain text"
+        for elem in element.find_all(class_=True):
+            classes = elem.get("class", [])
+            if isinstance(classes, str):
+                classes = [classes]
+            for cls in classes:
+                if cls.startswith("language-"):
+                    lang = cls.replace("language-", "").lower()
+                    mapped_lang = language_map.get(lang, lang)
+
+                    # Validate that the language is supported by Notion
+                    if mapped_lang in notion_supported_languages:
+                        return mapped_lang
+                    else:
+                        logger.warning(f"Unsupported language '{lang}' (mapped to '{mapped_lang}'), using 'plain text'")
+                        return "plain text"
+                elif cls.startswith("highlight-"):
+                    lang = cls.replace("highlight-", "").lower()
+                    mapped_lang = language_map.get(lang, lang)
+
+                    # Validate that the language is supported by Notion
+                    if mapped_lang in notion_supported_languages:
+                        return mapped_lang
+                    else:
+                        logger.warning(f"Unsupported language '{lang}' (mapped to '{mapped_lang}'), using 'plain text'")
+                        return "plain text"
+
+        return language
 
     def _truncate_cell_content(self, content: str) -> str:
         """Truncate cell content to fit Notion's limits."""
@@ -302,7 +446,100 @@ class CodeBlockConverter(BlockConverter):
         code_element = element.find("code") if element.name == "pre" else element
         language = "plain text"  # Default to 'plain text' as required by Notion
 
-        # Map common language identifiers to Notion's format
+        # Comprehensive mapping of language identifiers to Notion's supported languages
+        # Based on the error message, these are the languages Notion supports
+        notion_supported_languages = {
+            "abap",
+            "abc",
+            "agda",
+            "arduino",
+            "ascii art",
+            "assembly",
+            "bash",
+            "basic",
+            "bnf",
+            "c",
+            "clojure",
+            "coffeescript",
+            "coq",
+            "css",
+            "dart",
+            "dhall",
+            "diff",
+            "docker",
+            "ebnf",
+            "elixir",
+            "elm",
+            "erlang",
+            "f#",
+            "flow",
+            "fortran",
+            "gherkin",
+            "glsl",
+            "go",
+            "graphql",
+            "groovy",
+            "haskell",
+            "hcl",
+            "html",
+            "idris",
+            "java",
+            "javascript",
+            "json",
+            "julia",
+            "kotlin",
+            "latex",
+            "less",
+            "lisp",
+            "livescript",
+            "llvm ir",
+            "lua",
+            "makefile",
+            "markdown",
+            "markup",
+            "matlab",
+            "mathematica",
+            "mermaid",
+            "nix",
+            "notion formula",
+            "objective-c",
+            "ocaml",
+            "pascal",
+            "perl",
+            "php",
+            "plain text",
+            "powershell",
+            "prolog",
+            "protobuf",
+            "purescript",
+            "python",
+            "r",
+            "racket",
+            "reason",
+            "ruby",
+            "rust",
+            "sass",
+            "scala",
+            "scheme",
+            "scss",
+            "shell",
+            "smalltalk",
+            "solidity",
+            "sql",
+            "swift",
+            "toml",
+            "typescript",
+            "vb.net",
+            "verilog",
+            "vhdl",
+            "visual basic",
+            "webassembly",
+            "xml",
+            "yaml",
+            "java/c/c++/c#",
+        }
+
+        # Map common language identifiers to Notion's supported languages
         language_map = {
             "js": "javascript",
             "py": "python",
@@ -312,6 +549,31 @@ class CodeBlockConverter(BlockConverter):
             "sh": "shell",
             "bash": "shell",
             "plain_text": "plain text",
+            "yml": "yaml",
+            "dockerfile": "docker",
+            "md": "markdown",
+            "tex": "latex",
+            "c++": "java/c/c++/c#",
+            "cpp": "java/c/c++/c#",
+            "csharp": "c#",
+            "jinja2": "html",  # Map jinja2 templates to HTML
+            "jinja": "html",  # Map jinja templates to HTML
+            "j2": "html",  # Map j2 templates to HTML
+            "django": "html",  # Map django templates to HTML
+            "handlebars": "html",  # Map handlebars templates to HTML
+            "mustache": "html",  # Map mustache templates to HTML
+            "twig": "html",  # Map twig templates to HTML
+            "liquid": "html",  # Map liquid templates to HTML
+            "vue": "html",  # Map vue templates to HTML
+            "svelte": "html",  # Map svelte templates to HTML
+            "jsx": "javascript",  # Map JSX to JavaScript
+            "tsx": "typescript",  # Map TSX to TypeScript
+            "ps1": "powershell",  # Map PowerShell scripts
+            "psm1": "powershell",  # Map PowerShell modules
+            "bat": "shell",  # Map batch files to shell
+            "cmd": "shell",  # Map command files to shell
+            "zsh": "shell",  # Map zsh to shell
+            "fish": "shell",  # Map fish to shell
         }
 
         if isinstance(code_element, Tag):
@@ -320,8 +582,17 @@ class CodeBlockConverter(BlockConverter):
                 for cls in classes:
                     if cls.startswith("language-"):
                         # Convert language identifier to Notion's format
-                        lang = cls.replace("language-", "")
-                        language = language_map.get(lang, lang)
+                        lang = cls.replace("language-", "").lower()
+                        mapped_lang = language_map.get(lang, lang)
+
+                        # Validate that the language is supported by Notion
+                        if mapped_lang in notion_supported_languages:
+                            language = mapped_lang
+                        else:
+                            logger.warning(
+                                f"Unsupported language '{lang}' (mapped to '{mapped_lang}'), using 'plain text'"
+                            )
+                            language = "plain text"
                         break
 
         # Get code content and truncate if necessary

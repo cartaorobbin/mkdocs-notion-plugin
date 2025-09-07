@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mkdocs_notion_plugin"
-version = "0.0.6"
+version = "0.0.7"
 description = "Notion Plugin for mkdocs"
 authors = ["Robbin dev team <fdev@robbin.com.br>"]
 repository = "https://github.com/cartaorobbin/mkdocs-notion-plugin"

@@ -120,6 +120,80 @@ def test_code_block_converter():
     assert block["code"]["language"] == "plain text"
 
 
+def test_code_block_language_validation():
+    """Test that unsupported languages are mapped to supported ones or 'plain text'."""
+    converter = CodeBlockConverter()
+
+    # Test jinja2 template mapping to HTML
+    html = '<pre><code class="language-jinja2">{{ variable }}</code></pre>'
+    element = create_soup(html).find("pre")
+    block = converter.convert(element)
+    assert block["code"]["language"] == "html"
+
+    # Test JavaScript mapping
+    html = '<pre><code class="language-js">console.log("test");</code></pre>'
+    element = create_soup(html).find("pre")
+    block = converter.convert(element)
+    assert block["code"]["language"] == "javascript"
+
+    # Test unsupported language fallback to plain text
+    html = '<pre><code class="language-unsupported">some code</code></pre>'
+    element = create_soup(html).find("pre")
+    block = converter.convert(element)
+    assert block["code"]["language"] == "plain text"
+
+    # Test case insensitive mapping
+    html = '<pre><code class="language-PYTHON">def test(): pass</code></pre>'
+    element = create_soup(html).find("pre")
+    block = converter.convert(element)
+    assert block["code"]["language"] == "python"
+
+
+def test_table_code_highlight_language_validation():
+    """Test that code highlighting tables also validate languages properly."""
+    converter = TableConverter()
+
+    # Test jinja2 code highlighting table
+    html = """
+    <table class="highlighttable">
+        <tr>
+            <td class="code">
+                <div class="highlight">
+                    <pre><code class="language-jinja2">{{ variable }}</code></pre>
+                </div>
+            </td>
+        </tr>
+    </table>
+    """
+    element = create_soup(html).find("table")
+
+    assert converter.can_convert(element)
+    block = converter.convert(element)
+
+    # Should be converted to code block with validated language
+    assert block is not None
+    assert block["type"] == "code"
+    assert block["code"]["language"] == "html"  # jinja2 mapped to html
+
+    # Test unsupported language in code highlighting table
+    html = """
+    <table class="highlighttable">
+        <tr>
+            <td class="code">
+                <div class="highlight">
+                    <pre><code class="language-unsupported">some code</code></pre>
+                </div>
+            </td>
+        </tr>
+    </table>
+    """
+    element = create_soup(html).find("table")
+    block = converter.convert(element)
+
+    assert block["type"] == "code"
+    assert block["code"]["language"] == "plain text"  # fallback to plain text
+
+
 def test_block_factory():
     """Test block factory converter selection."""
     factory = BlockFactory()
