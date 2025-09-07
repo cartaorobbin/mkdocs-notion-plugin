@@ -4,6 +4,7 @@ import logging
 from typing import Optional
 
 import click
+from mkdocs.__main__ import cli
 from mkdocs.commands.build import build
 from mkdocs.config import load_config
 
@@ -12,7 +13,7 @@ from .plugin import NotionPlugin
 logger = logging.getLogger("mkdocs.commands.notion")
 
 
-@click.command(name="notion-deploy")
+@click.command()
 @click.option(
     "-f",
     "--config-file",
@@ -92,11 +93,8 @@ def notion_deploy(
         # Deploy to Notion
         click.echo("Deploying to Notion...")
 
-        # Initialize the plugin if not already done
-        if not notion_plugin.notion:
-            notion_plugin.on_config(config)
-
         # Call the deployment logic from the plugin directly
+        # The plugin will initialize the Notion client when needed
         notion_plugin.deploy_to_notion(config)
 
         click.echo("✅ Successfully deployed documentation to Notion!")
@@ -104,3 +102,12 @@ def notion_deploy(
     except Exception as e:
         click.echo(f"❌ Error during deployment: {e}", err=True)
         raise click.Abort() from e
+
+
+# Add our command to MkDocs CLI and create the enhanced CLI
+cli.add_command(notion_deploy)
+
+
+def mkdocs_with_notion() -> None:
+    """Enhanced MkDocs CLI with notion-deploy command."""
+    cli()

@@ -27,14 +27,17 @@ Add the plugin to your `mkdocs.yml`:
 ```yaml
 plugins:
   - notion:
-      notion_token: your-notion-integration-token
-      parent_page_id: your-parent-page-id
-      version: your-version
-      cache_dir: .notion_cache  # optional
-      deploy_on_build: false  # optional
+      # Notion configuration (only required for deployment)
+      notion_token: your-notion-integration-token  # optional
+      parent_page_id: your-parent-page-id          # optional
+      version: your-version                        # optional
+      cache_dir: .notion_cache                     # optional
+      deploy_on_build: false                       # optional
 ```
 
-### Required Configuration
+### Configuration for Deployment
+
+The following configuration is only required when using `mkdocs notion-deploy`:
 
 - `notion_token`: Your Notion integration token. Create one at https://www.notion.so/my-integrations
 - `parent_page_id`: The ID of the Notion page where your documentation will be deployed
@@ -44,6 +47,8 @@ plugins:
 
 - `cache_dir`: Directory to store cached Notion content (default: `.notion_cache`)
 - `deploy_on_build`: Whether to automatically deploy to Notion during build (default: `false`)
+
+**Note**: You can use `mkdocs build` and `mkdocs serve` without any Notion configuration. The Notion settings are only validated when you run `mkdocs notion-deploy`.
 
 ## Usage
 

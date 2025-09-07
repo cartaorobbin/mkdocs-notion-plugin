@@ -6,6 +6,8 @@ theme:
 plugins:
   - search
   - notion:
-      parent_page_id: 0cc7d539-ec4f-48c0-bf89-8a8abd3abb1b
-      version: "1.0.1"
-      deploy_on_build: false  # Use 'mkdocs notion-deploy' for manual deployment
+      # Minimal configuration - you can build/serve without Notion config
+      # Add parent_page_id and version when ready to deploy
+      # parent_page_id: 0cc7d539-ec4f-48c0-bf89-8a8abd3abb1b
+      # version: "1.0.1"
+      deploy_on_build: false

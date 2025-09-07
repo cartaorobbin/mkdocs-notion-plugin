@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mkdocs_notion_plugin"
-version = "0.0.1"
+version = "0.0.6"
 description = "Notion Plugin for mkdocs"
 authors = ["Robbin dev team <fdev@robbin.com.br>"]
 repository = "https://github.com/tomas_correa/mkdocs-notion-plugin"
@@ -14,7 +14,7 @@ packages = [
 notion = "mkdocs_notion_plugin:NotionPlugin"
 
 [tool.poetry.scripts]
-mkdocs = "mkdocs_notion_plugin.mkdocs_cli:cli"
+mkdocs = "mkdocs_notion_plugin.commands:mkdocs_with_notion"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
